@@ -1,23 +1,35 @@
 package lnd.mcp.server.service;
 
+import io.modelcontextprotocol.spec.McpSchema;
 import lnd.mcp.server.model.Status;
 import lnd.mcp.server.model.Ticket;
+import lombok.extern.slf4j.Slf4j;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
+import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class TicketCreateService {
 
     private  static final Map<String, Ticket> tickets =new HashMap<>();
 
     @McpTool(description = """
             Create a ticket with description
-            """)
+            """,
+            name = "JIRATicketCreationTool",
+            title = "Create a JIRA issue",
+            annotations = @McpTool.McpAnnotations(destructiveHint = false,
+            idempotentHint = false
+            )
+
+    )
     public Ticket createTicket(
             @McpToolParam(description = "description of the ticket ")
             String description) {
@@ -44,7 +56,11 @@ public class TicketCreateService {
 
     @McpTool(description = """
             update status of a ticket.
-            """)
+            """,
+
+            annotations = @McpTool.McpAnnotations(destructiveHint = true,
+                    idempotentHint = false)
+    )
 
     public Ticket updateStatus(
             @McpToolParam(description = """
@@ -52,12 +68,40 @@ public class TicketCreateService {
                     """)
             String id,
             @McpToolParam(description = "new status of the ticket.")
-            Status status){
+            Status status,
+            McpSyncRequestContext context
+            ){
+        // Access progress token from context
+        Object progressToken = context.request().progressToken();
+        log.info("Progress token : {}",progressToken);
+       context.progress(ps->{
+           ps.message("Handing it to proper route ").progress(0.0)
+                   .percentage(0);
+
+       });
+       context.ping();
         var ticket=findById(id);
         if(null!=ticket){
             ticket.setStatus(status);
 
         }
+
+        for(int i=1;i<=5;i++){
+            try {
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            final int j=i;
+            context.progress(ps->{
+
+                ps.message("Working on part: "+j).progress((double) j /5)
+                        .percentage((j/5)*100);
+
+            });
+        }
         return  ticket;
     }
+
+
 }
