@@ -1,4 +1,4 @@
-package lnd.mcp.server;
+package lnd.mcp.server.config;
 
 import lnd.mcp.server.service.TicketCreateService;
 import org.springframework.ai.support.ToolCallbacks;
