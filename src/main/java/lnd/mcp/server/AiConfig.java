@@ -11,9 +11,9 @@ import java.util.List;
 @Configuration
 public class AiConfig {
 
-    @Bean
-    public List<ToolCallback> toolCallbacks(TicketCreateService ticketCreateService){
-        return List.of(ToolCallbacks.from(ticketCreateService));
-    }
+//    @Bean
+//    public List<ToolCallback> toolCallbacks(TicketCreateService ticketCreateService){
+//        return List.of(ToolCallbacks.from(ticketCreateService));
+//    }
 
 }
