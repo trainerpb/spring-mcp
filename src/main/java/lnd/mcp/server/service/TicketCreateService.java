@@ -1,14 +1,14 @@
 package lnd.mcp.server.service;
 
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import lnd.mcp.server.model.Status;
 import lnd.mcp.server.model.Ticket;
 import lombok.extern.slf4j.Slf4j;
+import org.springaicommunity.mcp.annotation.McpProgressToken;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springaicommunity.mcp.context.McpSyncRequestContext;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -41,7 +41,14 @@ public class TicketCreateService {
     @McpTool(description = """
             Get all the tickets
             """)
-    public Collection<Ticket> getAllTickets(){
+    public Collection<Ticket> getAllTickets(McpSyncServerExchange exchange,
+                                            @McpProgressToken String progressToken){
+        exchange.loggingNotification(McpSchema.LoggingMessageNotification.builder().data("Tool1 Started!").build());
+
+        exchange.progressNotification(
+                new McpSchema.ProgressNotification(progressToken, 0.0, 1.0, "tool call start"));
+
+        exchange.ping(); // call client ping
         return  tickets.values();
     }
 
@@ -74,6 +81,7 @@ public class TicketCreateService {
         // Access progress token from context
         Object progressToken = context.request().progressToken();
         log.info("Progress token : {}",progressToken);
+       log.info("Elicit enabled : {}",context.elicitEnabled());
        context.progress(ps->{
            ps.message("Handing it to proper route ").progress(0.0)
                    .percentage(0);
