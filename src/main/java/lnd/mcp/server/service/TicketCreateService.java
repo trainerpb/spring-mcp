@@ -31,10 +31,15 @@ public class TicketCreateService {
 
     )
     public Ticket createTicket(
+            McpSyncServerExchange exchange,
             @McpToolParam(description = "description of the ticket ")
             String description) {
         Ticket ticket = Ticket.builder().description(description).id(UUID.randomUUID().toString())
                 .status(Status.CREATED).build();
+        exchange.loggingNotification(McpSchema.LoggingMessageNotification.builder()
+                        .level(McpSchema.LoggingLevel.NOTICE)
+                        .data("Created ticket with id "+ticket.getId())
+                .build());
         return tickets.put(ticket.getId(), ticket);
     }
 
@@ -70,9 +75,11 @@ public class TicketCreateService {
     )
 
     public Ticket updateStatus(
+            McpSyncServerExchange exchange,
             @McpToolParam(description = """
                     ticket id
                     """)
+
             String id,
             @McpToolParam(description = "new status of the ticket.")
             Status status,
@@ -80,6 +87,11 @@ public class TicketCreateService {
             ){
         // Access progress token from context
         Object progressToken = context.request().progressToken();
+        exchange.progressNotification(
+                new McpSchema.ProgressNotification(progressToken, 0.0, 1.0, "tool call start"));
+
+        exchange.ping(); // call client ping
+
         log.info("Progress token : {}",progressToken);
        log.info("Elicit enabled : {}",context.elicitEnabled());
        context.progress(ps->{
